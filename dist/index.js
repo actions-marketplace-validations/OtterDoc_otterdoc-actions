@@ -53,6 +53,7 @@ function run() {
             // core.debug(new Date().toTimeString())
             // core.setOutput('time', new Date().toTimeString())
             (0, fs_1.writeFileSync)('foo.txt', 'This is a test file', 'utf8');
+            (0, fs_1.writeFileSync)('foo2.txt', 'This is a test file', 'utf8');
             core.debug('Done!');
         }
         catch (error) {

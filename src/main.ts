@@ -15,6 +15,7 @@ async function run(): Promise<void> {
     // core.setOutput('time', new Date().toTimeString())
 
     writeFileSync('foo.txt', 'This is a test file', 'utf8')
+    writeFileSync('foo2.txt', 'This is a test file', 'utf8')
 
     core.debug('Done!')
   } catch (error) {
