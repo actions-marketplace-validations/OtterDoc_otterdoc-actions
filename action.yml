@@ -1,11 +1,10 @@
 name: 'Your name here'
 description: 'Provide a description here'
 author: 'Your name or organization here'
-# inputs:
-#   milliseconds: # change this
-#     required: true
-#     description: 'input description here'
-#     default: 'default value if applicable'
+inputs:
+  files: # change this
+    required: true
+    description: 'an array of the files that should be checked for missing comments'
 runs:
   using: 'node16'
   main: 'dist/index.js'
