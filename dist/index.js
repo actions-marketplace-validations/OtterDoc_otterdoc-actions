@@ -40,6 +40,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 const core = __importStar(__nccwpck_require__(186));
+const fs_1 = __nccwpck_require__(147);
 // import {wait} from './wait'
 function run() {
     return __awaiter(this, void 0, void 0, function* () {
@@ -51,6 +52,7 @@ function run() {
             // await wait(parseInt(ms, 10))
             // core.debug(new Date().toTimeString())
             // core.setOutput('time', new Date().toTimeString())
+            (0, fs_1.writeFileSync)('foo.txt', 'This is a test file', 'utf8');
             core.debug('Done!');
         }
         catch (error) {

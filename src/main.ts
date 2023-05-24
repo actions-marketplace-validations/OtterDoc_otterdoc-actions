@@ -1,4 +1,5 @@
 import * as core from '@actions/core'
+import {writeFileSync} from 'fs'
 // import {wait} from './wait'
 
 async function run(): Promise<void> {
@@ -12,6 +13,9 @@ async function run(): Promise<void> {
     // core.debug(new Date().toTimeString())
 
     // core.setOutput('time', new Date().toTimeString())
+
+    writeFileSync('foo.txt', 'This is a test file', 'utf8')
+
     core.debug('Done!')
   } catch (error) {
     if (error instanceof Error) core.setFailed(error.message)
