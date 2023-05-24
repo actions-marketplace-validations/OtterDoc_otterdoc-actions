@@ -44,6 +44,7 @@ const core = __importStar(__nccwpck_require__(186));
 function run() {
     return __awaiter(this, void 0, void 0, function* () {
         try {
+            core.warning('Who can see this message?');
             core.debug('Hellooooooo World from Otterdoc!');
             // const ms: string = core.getInput('milliseconds')
             // core.debug(`Waiting ${ms} milliseconds ...`) // debug is only output if you set the secret `ACTIONS_STEP_DEBUG` to true
