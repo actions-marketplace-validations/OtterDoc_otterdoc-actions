@@ -5,6 +5,9 @@ inputs:
   files: # change this
     required: true
     description: 'an array of the files that should be checked for missing comments'
+  key: # change this
+    required: true
+    description: 'An API key for OtterDoc'
 runs:
   using: 'node16'
   main: 'dist/index.js'

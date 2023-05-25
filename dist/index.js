@@ -45,9 +45,12 @@ const fs_1 = __nccwpck_require__(147);
 function run() {
     return __awaiter(this, void 0, void 0, function* () {
         try {
-            core.debug('Hellooooooo World from Otterdoc!?');
-            const files = core.getInput('files');
-            core.debug(`here are the files: ${files} `);
+            core.warning('Hellooooooo World from Otterdoc!?');
+            // const files: string = core.getInput('files')
+            // core.warning(`here are the files: ${files} `)
+            core.warning(`Here is where the file manifest is: ${process.env.HOME}/files.json `);
+            const filesString = (0, fs_1.readFileSync)(`${process.env.HOME}/files.json`, 'utf8');
+            core.warning(`Here are the files: ${filesString} `);
             // core.debug(new Date().toTimeString())
             // await wait(parseInt(ms, 10))
             // core.debug(new Date().toTimeString())
