@@ -1,12 +1,15 @@
 import * as core from '@actions/core'
-import {writeFileSync} from 'fs'
+import {readFileSync, writeFileSync} from 'fs'
 // import {wait} from './wait'
 
 async function run(): Promise<void> {
   try {
     core.warning('Hellooooooo World from Otterdoc!?')
-    const files: string = core.getInput('files')
-    core.warning(`here are the files: ${files} `)
+    // const files: string = core.getInput('files')
+    // core.warning(`here are the files: ${files} `)
+
+    const filesString = readFileSync(`~/files.json`, 'utf8')
+    core.warning(`here are the files: ${filesString} `)
 
     // core.debug(new Date().toTimeString())
     // await wait(parseInt(ms, 10))
