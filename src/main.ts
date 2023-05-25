@@ -4,7 +4,7 @@ import {writeFileSync} from 'fs'
 
 async function run(): Promise<void> {
   try {
-    core.debug('Hellooooooo World from Otterdoc!?')
+    core.warning('Hellooooooo World from Otterdoc!?')
     const files: string = core.getInput('files')
     core.warning(`here are the files: ${files} `)
 
