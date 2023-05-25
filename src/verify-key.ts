@@ -1,4 +1,5 @@
 import * as core from '@actions/core'
+import fetch from 'node-fetch'
 
 export async function VerifyOtterDocKey(key: string) {
   const result = await fetch(
