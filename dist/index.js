@@ -46,8 +46,8 @@ function run() {
     return __awaiter(this, void 0, void 0, function* () {
         try {
             core.warning('Hellooooooo World from Otterdoc!?');
-            // const files: string = core.getInput('files')
-            // core.warning(`here are the files: ${files} `)
+            const key = core.getInput('key');
+            core.warning(`The loaded key is: ${key} `);
             core.warning(`Here is where the file manifest is: ${process.env.HOME}/files.json `);
             const filesString = (0, fs_1.readFileSync)(`${process.env.HOME}/files.json`, 'utf8');
             core.warning(`Here are the files: ${filesString} `);
@@ -55,7 +55,7 @@ function run() {
             // await wait(parseInt(ms, 10))
             // core.debug(new Date().toTimeString())
             // core.setOutput('time', new Date().toTimeString())
-            (0, fs_1.writeFileSync)('foo.txt', 'This is a test file', 'utf8');
+            (0, fs_1.writeFileSync)('foo1.txt', 'This is a test file', 'utf8');
             (0, fs_1.writeFileSync)('foo2.txt', 'This is a test file', 'utf8');
             core.debug('Done!');
         }

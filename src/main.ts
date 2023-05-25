@@ -5,8 +5,9 @@ import {readFileSync, writeFileSync} from 'fs'
 async function run(): Promise<void> {
   try {
     core.warning('Hellooooooo World from Otterdoc!?')
-    // const files: string = core.getInput('files')
-    // core.warning(`here are the files: ${files} `)
+    
+    const key: string = core.getInput('key')
+    core.warning(`The loaded key is: ${key} `)
 
     core.warning(
       `Here is where the file manifest is: ${process.env.HOME}/files.json `
@@ -21,7 +22,7 @@ async function run(): Promise<void> {
 
     // core.setOutput('time', new Date().toTimeString())
 
-    writeFileSync('foo.txt', 'This is a test file', 'utf8')
+    writeFileSync('foo1.txt', 'This is a test file', 'utf8')
     writeFileSync('foo2.txt', 'This is a test file', 'utf8')
 
     core.debug('Done!')
