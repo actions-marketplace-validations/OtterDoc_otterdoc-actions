@@ -50,13 +50,10 @@ function run() {
             core.warning(`The loaded key is: ${key} `);
             const files = core.getInput('files');
             core.warning(`The files key is: ${files} `);
-            core.warning(`Here is where the file manifest is: ${process.env.HOME}/files.json `);
-            const filesString = (0, fs_1.readFileSync)(`${process.env.HOME}/files.json`, 'utf8');
-            core.warning(`Here are the files: ${filesString} `);
-            // core.debug(new Date().toTimeString())
-            // await wait(parseInt(ms, 10))
-            // core.debug(new Date().toTimeString())
-            // core.setOutput('time', new Date().toTimeString())
+            const filesArray = JSON.parse(files);
+            filesArray.forEach((file, index) => {
+                core.warning(`${index} The file is: ${file} `);
+            });
             (0, fs_1.writeFileSync)('foo1.txt', 'This is a test file', 'utf8');
             (0, fs_1.writeFileSync)('foo2.txt', 'This is a test file', 'utf8');
             core.debug('Done!');

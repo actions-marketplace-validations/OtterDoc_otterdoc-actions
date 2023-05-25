@@ -1,28 +1,22 @@
 import * as core from '@actions/core'
 import {readFileSync, writeFileSync} from 'fs'
+import {json} from 'stream/consumers'
 // import {wait} from './wait'
 
 async function run(): Promise<void> {
   try {
     core.warning('Hellooooooo World from Otterdoc!?')
-    
+
     const key: string = core.getInput('key')
     core.warning(`The loaded key is: ${key} `)
     const files: string = core.getInput('files')
     core.warning(`The files key is: ${files} `)
 
-    core.warning(
-      `Here is where the file manifest is: ${process.env.HOME}/files.json `
-    )
+    const filesArray = JSON.parse(files)
 
-    const filesString = readFileSync(`${process.env.HOME}/files.json`, 'utf8')
-    core.warning(`Here are the files: ${filesString} `)
-
-    // core.debug(new Date().toTimeString())
-    // await wait(parseInt(ms, 10))
-    // core.debug(new Date().toTimeString())
-
-    // core.setOutput('time', new Date().toTimeString())
+    filesArray.forEach((file: string, index: number) => {
+      core.warning(`${index} The file is: ${file} `)
+    })
 
     writeFileSync('foo1.txt', 'This is a test file', 'utf8')
     writeFileSync('foo2.txt', 'This is a test file', 'utf8')
