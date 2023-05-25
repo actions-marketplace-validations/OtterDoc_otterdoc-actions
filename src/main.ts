@@ -6,7 +6,7 @@ async function run(): Promise<void> {
   try {
     core.debug('Hellooooooo World from Otterdoc!?')
     const files: string = core.getInput('files')
-    core.debug(`here are the files: ${files} `)
+    core.warning(`here are the files: ${files} `)
 
     // core.debug(new Date().toTimeString())
     // await wait(parseInt(ms, 10))
