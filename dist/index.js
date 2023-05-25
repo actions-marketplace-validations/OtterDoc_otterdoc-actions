@@ -41,6 +41,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 const core = __importStar(__nccwpck_require__(186));
 const fs_1 = __nccwpck_require__(147);
+const verify_key_1 = __nccwpck_require__(821);
 // import {wait} from './wait'
 function run() {
     return __awaiter(this, void 0, void 0, function* () {
@@ -50,6 +51,10 @@ function run() {
             core.warning(`The loaded key is: ${key} `);
             const files = core.getInput('files');
             core.warning(`The files key is: ${files} `);
+            if (!(yield (0, verify_key_1.VerifyOtterDocKey)(key))) {
+                core.setFailed('Invalid API key');
+                return;
+            }
             const filesArray = JSON.parse(files);
             filesArray.forEach((file, index) => {
                 core.warning(`${index} The file is: ${file} `);
@@ -65,6 +70,38 @@ function run() {
     });
 }
 run();
+
+
+/***/ }),
+
+/***/ 821:
+/***/ (function(__unused_webpack_module, exports) {
+
+"use strict";
+
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.VerifyOtterDocKey = void 0;
+function VerifyOtterDocKey(key) {
+    return __awaiter(this, void 0, void 0, function* () {
+        const result = yield fetch(`https://www.otterdoc.ai/api/verify-key?key=${key}`);
+        if (result.status === 200) {
+            return true;
+        }
+        else {
+            return false;
+        }
+    });
+}
+exports.VerifyOtterDocKey = VerifyOtterDocKey;
 
 
 /***/ }),

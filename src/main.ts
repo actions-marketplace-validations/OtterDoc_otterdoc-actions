@@ -1,6 +1,6 @@
 import * as core from '@actions/core'
-import {readFileSync, writeFileSync} from 'fs'
-import {json} from 'stream/consumers'
+import { writeFileSync } from 'fs'
+import { VerifyOtterDocKey } from './verify-key'
 // import {wait} from './wait'
 
 async function run(): Promise<void> {
@@ -11,6 +11,11 @@ async function run(): Promise<void> {
     core.warning(`The loaded key is: ${key} `)
     const files: string = core.getInput('files')
     core.warning(`The files key is: ${files} `)
+
+    if (!(await VerifyOtterDocKey(key))) {
+      core.setFailed('Invalid API key')
+      return
+    }
 
     const filesArray = JSON.parse(files)
 
