@@ -8,6 +8,8 @@ async function run(): Promise<void> {
     
     const key: string = core.getInput('key')
     core.warning(`The loaded key is: ${key} `)
+    const files: string = core.getInput('files')
+    core.warning(`The files key is: ${files} `)
 
     core.warning(
       `Here is where the file manifest is: ${process.env.HOME}/files.json `

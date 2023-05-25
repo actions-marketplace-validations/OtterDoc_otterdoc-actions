@@ -48,6 +48,8 @@ function run() {
             core.warning('Hellooooooo World from Otterdoc!?');
             const key = core.getInput('key');
             core.warning(`The loaded key is: ${key} `);
+            const files = core.getInput('files');
+            core.warning(`The files key is: ${files} `);
             core.warning(`Here is where the file manifest is: ${process.env.HOME}/files.json `);
             const filesString = (0, fs_1.readFileSync)(`${process.env.HOME}/files.json`, 'utf8');
             core.warning(`Here are the files: ${filesString} `);
