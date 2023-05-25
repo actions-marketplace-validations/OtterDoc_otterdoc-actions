@@ -6,8 +6,11 @@ export async function VerifyOtterDocKey(key: string) {
   )
 
   if (result.status === 200) {
+    core.warning('Key is valid')
     return true
   } else {
+    core.warning('Key is invalid')
+    core.warning(`Verify status code: ${result.status}`)
     return false
   }
 }
