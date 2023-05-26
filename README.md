@@ -103,3 +103,11 @@ See the [actions tab](https://github.com/actions/typescript-action/actions) for 
 ## Usage:
 
 After testing you can [create a v1 tag](https://github.com/actions/toolkit/blob/master/docs/action-versioning.md) to reference the stable and latest V1 action
+
+
+## Testing
+You'll need to set the following OtterDoc key in an `.env` file at the root directory of the project.
+
+```
+INPUT_KEY=XXXXX-XXXX-XXXXXX
+```
