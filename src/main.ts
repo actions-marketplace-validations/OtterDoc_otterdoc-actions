@@ -1,9 +1,7 @@
 import * as core from '@actions/core'
-import {writeFileSync} from 'fs'
-import {ProcessFile} from './processFile'
-import { VerifyOtterDocKey } from './verify-key'
+import {CommentFile} from './processFile'
+import {VerifyOtterDocKey} from './verify-key'
 // import {VerifyOtterDocKey} from './verify-key'
-
 
 export async function run(): Promise<boolean> {
   console.log('Here we goooooo')
@@ -26,13 +24,12 @@ export async function run(): Promise<boolean> {
 
     const filesArray = JSON.parse(files)
 
-    for (const file of filesArray) {
+    const updatedFiles = filesArray.map(async (file: string) => {
       core.warning(`The file is: ${file} `)
-      await ProcessFile(file)
-    }
+      return CommentFile(file)
+    })
 
-    writeFileSync('foo1.txt', 'This is a test file', 'utf8')
-    writeFileSync('foo2.txt', 'This is a test file', 'utf8')
+    await Promise.all(updatedFiles)
 
     core.debug('Done!')
   } catch (error) {

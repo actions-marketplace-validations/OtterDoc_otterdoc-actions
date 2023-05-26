@@ -1,11 +1,12 @@
-import {readFileSync} from 'fs'
+import {readFileSync, writeFileSync} from 'fs'
 
-import axios, { AxiosError } from 'axios'
+import axios, {AxiosError} from 'axios'
 
+import * as core from '@actions/core'
 import {parse} from '@babel/parser'
-import traverse, {NodePath} from '@babel/traverse'
+import traverse, {Node, NodePath} from '@babel/traverse'
 
-const API_BASE_URL = "https://www.codescribe.co";
+const API_BASE_URL = 'https://www.codescribe.co'
 
 // export enum ScanType {
 //   SCAN_ALL_FUNCTIONS = 0,
@@ -13,13 +14,22 @@ const API_BASE_URL = "https://www.codescribe.co";
 //   SCAN_CURRENT_FUNCTION
 // }
 
-export async function ProcessFile(
+export async function CommentFile(filePath: string): Promise<boolean> {
+  const commentedFileString = await GetCommentedFileString(filePath)
+  if (commentedFileString) {
+    writeFileSync(filePath, commentedFileString, 'utf8')
+    return true
+  }
+  return false
+}
+
+export async function GetCommentedFileString(
   filePath: string
   // scanType = ScanType.SCAN_NEW_FUNCTIONS
 ): Promise<string> {
   // Get the API key from the global state
   // Dummy value is used if the key is not found
-  // const apiKey = core.getInput('key')
+  const apiKey = core.getInput('key')
 
   const sourceCode = readFileSync(filePath, 'utf8')
 
@@ -50,53 +60,50 @@ export async function ProcessFile(
   })
   // merge into one array
   // Reverse sort the array to start from the bottom to avoid line clashes
-  declarations.sort((a, b) => b.node.start || 0 - (a.node.start || 0))
+  declarations.sort((a, b) => b.node.start || 0 - (a.node.start || 0)).reverse()
 
   console.log('Output Functions text')
 
-  for (const path of declarations) {
-    console.log(`Start to end: ${path.node.start} to ${path.node.end}`)
-    console.log(
-      'Chunk:' + sourceCode.slice(path.node.start || 0, path.node.end || 0)
+  const fetchedCommentsPromises = declarations.map(async path => {
+    const start = path.node.start || 0
+    const end = path.node.end || 0
+    const typedocComments =
+      start && end ? getComments(sourceCode, path.node) : []
+
+    // Fetch comments only for functions that match the scanType conditions
+    const previousComment =
+      typedocComments.length > 0 ? typedocComments[0] : undefined
+
+    const fetchedComment = await fetchCommentForCodeChunk(
+      sourceCode.slice(start, end),
+      apiKey,
+      previousComment
     )
+
+    return {
+      comment: fetchedComment ? formatComment(fetchedComment) : '',
+      startPos: start
+    }
+  })
+
+  const fetchedComments = await Promise.all(fetchedCommentsPromises)
+
+  let updatedSourceCode = sourceCode
+
+  console.log(`We fetched ${fetchedComments.length} comments`)
+
+  for (const fetchedComment of fetchedComments) {
+    console.log(`fetchedComment:\n------\n${fetchedComment.comment}\n------`)
+    const insertPos = findPreviousNewlineCharacter(
+      sourceCode,
+      fetchedComment.startPos
+    )
+    updatedSourceCode =
+      updatedSourceCode.substring(0, insertPos) +
+      fetchedComment.comment +
+      updatedSourceCode.substring(insertPos)
   }
 
-  return sourceCode
-
-  // const fetchedComments = await Promise.all(
-  //   declarations.map(async (path, index) => {
-  //     const start = path.node.start || 0
-  //     const end = path.node.end || 0
-  //     const typedocComments =
-  //       start && end ? getComments(sourceCode, path.node) : []
-
-  //     // Fetch comments only for functions that match the scanType conditions
-  //     if (
-  //       scanType === ScanType.SCAN_ALL_FUNCTIONS ||
-  //       (scanType === ScanType.SCAN_NEW_FUNCTIONS &&
-  //         typedocComments.length === ScanType.SCAN_ALL_FUNCTIONS)
-  //     ) {
-  //       const previousComment =
-  //         typedocComments.length > 0 ? typedocComments[0] : undefined
-
-  //       // Chris: I think this is where we're awaiting when we should be returning promises?
-  //       const fetchedComment =
-  //         start !== undefined && end !== undefined
-  //           ? await fetchCommentForCodeChunk(
-  //               sourceCode.slice(start, end),
-  //               apiKey,
-  //               previousComment
-  //             )
-  //           : null
-
-  //       return fetchedComment ? formatComment(fetchedComment) : null
-  //     }
-
-  //     return null
-  //   })
-  // )
-
-  // let textEdits: string = []
   // for (let i = 0; i < declarations.length; i++) {
   //   const path = declarations[i]
   //   const funcStartPos = path.node.start
@@ -133,7 +140,7 @@ export async function ProcessFile(
   //   }
   // }
 
-  // return textEdits
+  return updatedSourceCode
 }
 
 // class DocumentVersionChangedError extends Error {
@@ -143,10 +150,10 @@ export async function ProcessFile(
 //   }
 // }
 
-// function formatComment(comment: string): string {
-//   const match = comment.match(/\/\*\*[\s\S]*?\*\//)
-//   return match ? match[0] + '\n' : ''
-// }
+function formatComment(comment: string): string {
+  const match = comment.match(/\/\*\*[\s\S]*?\*\//)
+  return match ? `${match[0]}\n` : ''
+}
 
 async function fetchCommentForCodeChunk(
   functionString: string,
@@ -160,15 +167,13 @@ async function fetchCommentForCodeChunk(
       throw new Error('API key is missing or not provided.')
     }
 
-    console.log('API key is present:', apiKey)
-
     const response = await axios.post(`${API_BASE_URL}/api/getComment`, {
       apiKey,
       functionString,
       previousComment
     })
 
-    console.log('Got response from API', response)
+    // console.log('Got response from API', response)
     return response.data.comment
   } catch (error) {
     if (error instanceof AxiosError && error.response) {
@@ -185,7 +190,7 @@ async function fetchCommentForCodeChunk(
     }
 
     throw new Error(
-      'Failed to fetch comment from API: ' + (error as Error).message
+      `Failed to fetch comment from API: ${(error as Error).message}`
     )
   }
 }
@@ -244,18 +249,34 @@ async function fetchCommentForCodeChunk(
 //   }
 // }
 
-// function getComments(sourceCode: string, node: any): string[] {
-//   const leadingComments = node.leadingComments
-//   if (!leadingComments) {
-//     return []
-//   }
-//   const commentText = sourceCode.slice(
-//     leadingComments[0].start,
-//     leadingComments[leadingComments.length - 1].end
-//   )
-//   const typedocComments = Array.from(
-//     commentText.matchAll(/\/\*\*[\s\S]*?\*\//g),
-//     match => match[0]
-//   )
-//   return typedocComments
-// }
+function getComments(sourceCode: string, node: Node): string[] {
+  const leadingComments = node.leadingComments
+  if (!leadingComments) {
+    return []
+  }
+  const commentText = sourceCode.slice(
+    leadingComments[0].start,
+    leadingComments[leadingComments.length - 1].end
+  )
+  const typedocComments = Array.from(
+    commentText.matchAll(/\/\*\*[\s\S]*?\*\//g),
+    match => match[0]
+  )
+  return typedocComments
+}
+
+function findPreviousNewlineCharacter(
+  sourceCode: string,
+  position: number
+): number {
+  console.log(`Finding previous newline character from position ${position}`)
+  let index = position
+  while (index >= 0) {
+    console.log(`Character at ${index}: ${sourceCode[index]}`)
+    if (sourceCode[index] === '\n' || sourceCode[index] === '\r') {
+      return index + 1
+    }
+    index--
+  }
+  return 0
+}

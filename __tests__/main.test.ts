@@ -22,7 +22,7 @@ test('wait 500 ms', async () => {
 })
 
 // shows how the runner will run a javascript action with env / stdout protocol
-test('test runs', () => {
+test('test runs', async () => {
   process.env['INPUT_FILES'] = '["src/sample.ts"]'
   // const np = process.execPath
   // const ip = path.join(__dirname, '..', 'lib', 'main.js')
@@ -32,5 +32,5 @@ test('test runs', () => {
   // }
   // console.log(cp.execFileSync(np, [ip], options))
 
-  run()
+  await run()
 })
