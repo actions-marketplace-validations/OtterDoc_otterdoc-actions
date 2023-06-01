@@ -1,6 +1,7 @@
 import * as core from '@actions/core'
 import {CommentFile} from './processFile'
 import {VerifyOtterDocKey} from './verify-key'
+import { documentRepo } from './GatherFiles'
 // import {VerifyOtterDocKey} from './verify-key'
 
 export async function run(): Promise<boolean> {
@@ -24,12 +25,14 @@ export async function run(): Promise<boolean> {
 
     const filesArray = JSON.parse(files)
 
-    const updatedFiles = filesArray.map(async (file: string) => {
-      core.warning(`The file is: ${file} `)
-      return CommentFile(file)
-    })
+    await documentRepo()
 
-    await Promise.all(updatedFiles)
+    // const updatedFiles = filesArray.map(async (file: string) => {
+    //   core.warning(`The file is: ${file} `)
+    //   return CommentFile(file)
+    // })
+
+    // await   Promise.all(updatedFiles)
 
     core.debug('Done!')
   } catch (error) {
