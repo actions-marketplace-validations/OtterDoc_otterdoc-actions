@@ -1,8 +1,8 @@
 import * as core from '@actions/core'
-import fetch from 'node-fetch'
+import axios from 'axios'
 
 export async function VerifyOtterDocKey(key: string): Promise<boolean> {
-  const result = await fetch(
+  const result = await axios.get(
     `https://www.otterdoc.ai/api/verify-key?key=${key}`
   )
 
