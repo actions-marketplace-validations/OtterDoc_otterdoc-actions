@@ -65,6 +65,8 @@ const traverseDirectory = async (
 }
 
 export const documentRepo = async (basePath: string) => {
+  console.log(`Running OtterDoc on the following path: ${basePath}`)
+  
   const gitignore = await readIgnoreFile(basePath, '.gitignore')
   const dockerignore = await readIgnoreFile(basePath, '.dockerignore')
 

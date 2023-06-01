@@ -80,6 +80,7 @@ const traverseDirectory = (directoryPath, basePath, ig) => __awaiter(void 0, voi
     yield Promise.all(tasks);
 });
 const documentRepo = (basePath) => __awaiter(void 0, void 0, void 0, function* () {
+    console.log(`Running OtterDoc on the following path: ${basePath}`);
     const gitignore = yield readIgnoreFile(basePath, '.gitignore');
     const dockerignore = yield readIgnoreFile(basePath, '.dockerignore');
     // Create a combined ignore object
