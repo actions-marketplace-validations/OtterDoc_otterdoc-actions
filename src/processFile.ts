@@ -163,7 +163,7 @@ async function fetchCommentForCodeChunk(
   previousComment?: string
 ): Promise<string> {
   try {
-    console.log('Fetching comment from API...')
+    console.log(`Fetching comment from API: ${functionString.substring(0, 64)}}`)
 
     if (!apiKey) {
       throw new Error('API key is missing or not provided.')
@@ -178,6 +178,7 @@ async function fetchCommentForCodeChunk(
     // console.log('Got response from API', response)
     return response.data.comment
   } catch (error) {
+    console.log('ERROR: Failed to fetch comment from API: ', error)
     if (error instanceof AxiosError && error.response) {
       const statusCode = error.response.status
       const errorMessage = error.response.data?.message || 'Unknown error'

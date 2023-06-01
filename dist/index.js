@@ -354,7 +354,7 @@ function fetchCommentForCodeChunk(functionString, apiKey, previousComment) {
     var _a;
     return __awaiter(this, void 0, void 0, function* () {
         try {
-            console.log('Fetching comment from API...');
+            console.log(`Fetching comment from API: ${functionString.substring(0, 64)}}`);
             if (!apiKey) {
                 throw new Error('API key is missing or not provided.');
             }
@@ -367,6 +367,7 @@ function fetchCommentForCodeChunk(functionString, apiKey, previousComment) {
             return response.data.comment;
         }
         catch (error) {
+            console.log('ERROR: Failed to fetch comment from API: ', error);
             if (error instanceof axios_1.AxiosError && error.response) {
                 const statusCode = error.response.status;
                 const errorMessage = ((_a = error.response.data) === null || _a === void 0 ? void 0 : _a.message) || 'Unknown error';
