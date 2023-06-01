@@ -149,6 +149,7 @@ function run() {
         console.log('Here we goooooo');
         console.log(`The env key is ${process.env.INPUT_KEY} `);
         console.log(`The current path is: '${__dirname}'`);
+        console.log(`The code was checked out under: '${process.env.GITHUB_WORKSPACE}'`);
         try {
             core.warning('Hellooooooo World from Otterdoc!?');
             const key = core.getInput('key');

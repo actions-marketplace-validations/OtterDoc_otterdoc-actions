@@ -1,7 +1,7 @@
 import * as core from '@actions/core'
 import {CommentFile} from './processFile'
 import {VerifyOtterDocKey} from './verify-key'
-import { documentRepo } from './GatherFiles'
+import {documentRepo} from './GatherFiles'
 // import {VerifyOtterDocKey} from './verify-key'
 
 export async function run(): Promise<boolean> {
@@ -9,6 +9,9 @@ export async function run(): Promise<boolean> {
 
   console.log(`The env key is ${process.env.INPUT_KEY} `)
   console.log(`The current path is: '${__dirname}'`)
+  console.log(
+    `The code was checked out under: '${process.env.GITHUB_WORKSPACE}'`
+  )
   try {
     core.warning('Hellooooooo World from Otterdoc!?')
 
@@ -20,7 +23,6 @@ export async function run(): Promise<boolean> {
       core.setFailed('Invalid API key')
       return false
     }
-
 
     await documentRepo()
 
