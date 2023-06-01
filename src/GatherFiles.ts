@@ -23,7 +23,6 @@ const readIgnoreFile = async (basePath: string, filename: string) => {
     const fileContent = await fs.readFile(filePath, 'utf-8')
     return ignore().add(fileContent)
   } catch (error) {
-    console.error(`Failed to read ${filename} file: ${filePath}`)
     return null
   }
 }
@@ -66,9 +65,13 @@ const traverseDirectory = async (
 
 export const documentRepo = async (basePath: string) => {
   console.log(`Running OtterDoc on the following path: ${basePath}`)
-  
-  const gitignore = await readIgnoreFile(basePath, '.gitignore')
-  const dockerignore = await readIgnoreFile(basePath, '.dockerignore')
+
+  const gitignore = await readIgnoreFile(basePath, '.gitignore').catch(() =>
+    console.log('No .gitignore file found')
+  )
+  const dockerignore = await readIgnoreFile(basePath, '.dockerignore').catch(
+    () => console.log('No .dockerignore file found')
+  )
 
   // Create a combined ignore object
   const combinedIgnore = ignore()
