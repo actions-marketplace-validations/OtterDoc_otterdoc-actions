@@ -148,6 +148,7 @@ function run() {
     return __awaiter(this, void 0, void 0, function* () {
         console.log('Here we goooooo');
         console.log(`The env key is ${process.env.INPUT_KEY} `);
+        console.log(`The current path is: '${__dirname}'`);
         try {
             core.warning('Hellooooooo World from Otterdoc!?');
             const key = core.getInput('key');

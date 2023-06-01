@@ -8,6 +8,7 @@ export async function run(): Promise<boolean> {
   console.log('Here we goooooo')
 
   console.log(`The env key is ${process.env.INPUT_KEY} `)
+  console.log(`The current path is: '${__dirname}'`)
   try {
     core.warning('Hellooooooo World from Otterdoc!?')
 
