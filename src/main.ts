@@ -13,9 +13,6 @@ export async function run(): Promise<boolean> {
 
     const key: string = core.getInput('key')
     core.warning(`The loaded key is: ${key} `)
-    const files: string = core.getInput('files')
-    console.log(`The files var is: ${files} `)
-    core.warning(`The files var is: ${files} `)
 
     if (!(await VerifyOtterDocKey(key))) {
       console.log('Invalid API key')
@@ -23,7 +20,6 @@ export async function run(): Promise<boolean> {
       return false
     }
 
-    const filesArray = JSON.parse(files)
 
     await documentRepo()
 

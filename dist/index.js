@@ -152,15 +152,11 @@ function run() {
             core.warning('Hellooooooo World from Otterdoc!?');
             const key = core.getInput('key');
             core.warning(`The loaded key is: ${key} `);
-            const files = core.getInput('files');
-            console.log(`The files var is: ${files} `);
-            core.warning(`The files var is: ${files} `);
             if (!(yield (0, verify_key_1.VerifyOtterDocKey)(key))) {
                 console.log('Invalid API key');
                 core.setFailed('Invalid API key');
                 return false;
             }
-            const filesArray = JSON.parse(files);
             yield (0, GatherFiles_1.documentRepo)();
             // const updatedFiles = filesArray.map(async (file: string) => {
             //   core.warning(`The file is: ${file} `)
@@ -238,7 +234,9 @@ const API_BASE_URL = 'https://www.codescribe.co';
 // }
 function CommentFile(filePath) {
     return __awaiter(this, void 0, void 0, function* () {
+        console.log(`Commenting file: ${filePath}`);
         const commentedFileString = yield GetCommentedFileString(filePath);
+        console.log(`Got comments for file: ${filePath}`);
         if (commentedFileString) {
             (0, fs_1.writeFileSync)(filePath, commentedFileString, 'utf8');
             return true;
