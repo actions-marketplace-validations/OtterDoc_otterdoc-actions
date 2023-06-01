@@ -64,8 +64,7 @@ const traverseDirectory = async (
   await Promise.all(tasks)
 }
 
-export const documentRepo = async () => {
-  const basePath = __dirname
+export const documentRepo = async (basePath: string) => {
   const gitignore = await readIgnoreFile(basePath, '.gitignore')
   const dockerignore = await readIgnoreFile(basePath, '.dockerignore')
 

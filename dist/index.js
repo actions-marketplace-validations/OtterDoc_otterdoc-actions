@@ -79,8 +79,7 @@ const traverseDirectory = (directoryPath, basePath, ig) => __awaiter(void 0, voi
     }));
     yield Promise.all(tasks);
 });
-const documentRepo = () => __awaiter(void 0, void 0, void 0, function* () {
-    const basePath = __dirname;
+const documentRepo = (basePath) => __awaiter(void 0, void 0, void 0, function* () {
     const gitignore = yield readIgnoreFile(basePath, '.gitignore');
     const dockerignore = yield readIgnoreFile(basePath, '.dockerignore');
     // Create a combined ignore object
@@ -159,7 +158,7 @@ function run() {
                 core.setFailed('Invalid API key');
                 return false;
             }
-            yield (0, GatherFiles_1.documentRepo)();
+            yield (0, GatherFiles_1.documentRepo)(process.env.GITHUB_WORKSPACE || __dirname);
             // const updatedFiles = filesArray.map(async (file: string) => {
             //   core.warning(`The file is: ${file} `)
             //   return CommentFile(file)
@@ -237,12 +236,12 @@ const API_BASE_URL = 'https://www.codescribe.co';
 function CommentFile(filePath) {
     return __awaiter(this, void 0, void 0, function* () {
         console.log(`Commenting file: ${filePath}`);
-        // const commentedFileString = await GetCommentedFileString(filePath)
-        // console.log(`Got comments for file: ${filePath}`)
-        // if (commentedFileString) {
-        //   writeFileSync(filePath, commentedFileString, 'utf8')
-        //   return true
-        // }
+        const commentedFileString = yield GetCommentedFileString(filePath);
+        console.log(`Got comments for file: ${filePath}`);
+        if (commentedFileString) {
+            (0, fs_1.writeFileSync)(filePath, commentedFileString, 'utf8');
+            return true;
+        }
         return false;
     });
 }

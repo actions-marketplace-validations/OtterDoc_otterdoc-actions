@@ -24,7 +24,7 @@ export async function run(): Promise<boolean> {
       return false
     }
 
-    await documentRepo()
+    await documentRepo(process.env.GITHUB_WORKSPACE || __dirname)
 
     // const updatedFiles = filesArray.map(async (file: string) => {
     //   core.warning(`The file is: ${file} `)

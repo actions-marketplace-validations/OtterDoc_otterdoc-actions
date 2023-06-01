@@ -16,12 +16,12 @@ const API_BASE_URL = 'https://www.codescribe.co'
 
 export async function CommentFile(filePath: string): Promise<boolean> {
   console.log(`Commenting file: ${filePath}`)
-  // const commentedFileString = await GetCommentedFileString(filePath)
-  // console.log(`Got comments for file: ${filePath}`)
-  // if (commentedFileString) {
-  //   writeFileSync(filePath, commentedFileString, 'utf8')
-  //   return true
-  // }
+  const commentedFileString = await GetCommentedFileString(filePath)
+  console.log(`Got comments for file: ${filePath}`)
+  if (commentedFileString) {
+    writeFileSync(filePath, commentedFileString, 'utf8')
+    return true
+  }
   return false
 }
 
