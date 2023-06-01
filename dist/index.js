@@ -235,12 +235,12 @@ const API_BASE_URL = 'https://www.codescribe.co';
 function CommentFile(filePath) {
     return __awaiter(this, void 0, void 0, function* () {
         console.log(`Commenting file: ${filePath}`);
-        const commentedFileString = yield GetCommentedFileString(filePath);
-        console.log(`Got comments for file: ${filePath}`);
-        if (commentedFileString) {
-            (0, fs_1.writeFileSync)(filePath, commentedFileString, 'utf8');
-            return true;
-        }
+        // const commentedFileString = await GetCommentedFileString(filePath)
+        // console.log(`Got comments for file: ${filePath}`)
+        // if (commentedFileString) {
+        //   writeFileSync(filePath, commentedFileString, 'utf8')
+        //   return true
+        // }
         return false;
     });
 }
@@ -253,6 +253,7 @@ function GetCommentedFileString(filePath
         // Dummy value is used if the key is not found
         const apiKey = core.getInput('key');
         const sourceCode = (0, fs_1.readFileSync)(filePath, 'utf8');
+        console.log(`Reading File: ${filePath}`);
         const ast = (0, parser_1.parse)(sourceCode, {
             sourceType: 'module',
             plugins: ['typescript', 'jsx'],
@@ -354,7 +355,7 @@ function fetchCommentForCodeChunk(functionString, apiKey, previousComment) {
     var _a;
     return __awaiter(this, void 0, void 0, function* () {
         try {
-            console.log(`Fetching comment from API: ${functionString.substring(0, 64)}}`);
+            console.log(`Fetching comment from API...`);
             if (!apiKey) {
                 throw new Error('API key is missing or not provided.');
             }
