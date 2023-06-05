@@ -68,6 +68,11 @@ export async function GetCommentedFileString(
   console.log('Output Functions text')
 
   const fetchedCommentsPromises = declarations.map(async path => {
+    if (path.node.leadingComments) {
+      console.log('Existing comments found', path.node.leadingComments)
+      return
+    }
+
     const start = path.node.start || 0
     const end = path.node.end || 0
     const typedocComments =
@@ -96,6 +101,9 @@ export async function GetCommentedFileString(
   console.log(`We fetched ${fetchedComments.length} comments`)
 
   for (const fetchedComment of fetchedComments) {
+    if (!fetchedComment) {
+      continue
+    }
     console.log(`fetchedComment:\n------\n${fetchedComment.comment}\n------`)
     const insertPos = findPreviousNewlineCharacter(
       sourceCode,
@@ -273,10 +281,8 @@ function findPreviousNewlineCharacter(
   sourceCode: string,
   position: number
 ): number {
-  console.log(`Finding previous newline character from position ${position}`)
   let index = position
   while (index >= 0) {
-    console.log(`Character at ${index}: ${sourceCode[index]}`)
     if (sourceCode[index] === '\n' || sourceCode[index] === '\r') {
       return index + 1
     }
