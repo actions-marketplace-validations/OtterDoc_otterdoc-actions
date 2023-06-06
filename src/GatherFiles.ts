@@ -66,12 +66,8 @@ const traverseDirectory = async (
 export const documentRepo = async (basePath: string) => {
   console.log(`Running OtterDoc on the following path: ${basePath}`)
 
-  const gitignore = await readIgnoreFile(basePath, '.gitignore').catch(() =>
-    console.log('No .gitignore file found')
-  )
-  const dockerignore = await readIgnoreFile(basePath, '.dockerignore').catch(
-    () => console.log('No .dockerignore file found')
-  )
+  const gitignore = await readIgnoreFile(basePath, '.gitignore')
+  const dockerignore = await readIgnoreFile(basePath, '.dockerignore')
 
   // Create a combined ignore object
   const combinedIgnore = ignore()
