@@ -1,7 +1,7 @@
 import fs from 'fs'
 import ts from 'typescript'
 import {encode} from 'gpt-3-encoder'
-import fetch from 'node-fetch'
+import axios from 'axios'
 import {config as dotenvConfig} from 'dotenv'
 dotenvConfig()
 
@@ -44,7 +44,7 @@ const generateDocumentation = async (
 */`
   } else {
     try {
-      const response = await fetch('http://localhost:3000/api/getComment', {
+      const response = await axios.post('http://localhost:3000/api/getComment', {
         // Replace YOUR_ENDPOINT with the endpoint of your server function
         method: 'POST',
         headers: {
@@ -59,11 +59,12 @@ const generateDocumentation = async (
         })
       })
 
-      if (!response.ok) {
+      if (!response.data) {
         throw new Error(`HTTP error! status: ${response.status}`)
       }
 
-      const data = (await response.json()) as ResponseData
+      console.log('Got response from API', response.data)
+      const data = (await response.data.json()) as ResponseData
       const documentation = data.comment
       return documentation
     } catch (error) {
