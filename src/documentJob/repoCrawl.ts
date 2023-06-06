@@ -25,7 +25,6 @@ const readIgnoreFile = async (
     const fileContent = await fs.readFile(filePath, 'utf-8')
     return ignore().add(fileContent)
   } catch (error) {
-    console.error(`Failed to read ${filename} file: ${filePath}`)
     return null
   }
 }

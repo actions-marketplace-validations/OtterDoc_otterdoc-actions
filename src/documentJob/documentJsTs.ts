@@ -44,7 +44,7 @@ const generateDocumentation = async (
 */`
   } else {
     try {
-      const response = await axios.post('http://localhost:3000/api/getComment', {
+      const response = await axios.post('http://www.otterdoc.ai/api/getComment', {
         // Replace YOUR_ENDPOINT with the endpoint of your server function
         method: 'POST',
         headers: {

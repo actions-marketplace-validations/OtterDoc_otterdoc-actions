@@ -1,10 +1,8 @@
-/**
 export interface User {
   name: string
   id: number
 }
 
-/**
 export class UserAccount {
   name: string
   id: number
@@ -15,7 +13,6 @@ export class UserAccount {
   }
 }
 
-/**
 export function getAdminUser(): User {
   return new UserAccount('Murphy', 1)
 }
