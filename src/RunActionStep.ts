@@ -1,5 +1,5 @@
 import * as core from '@actions/core'
-import { documentRepo } from './GatherFiles'
+import { documentRepo } from './documentJob/repoCrawl'
 import { VerifyOtterDocKey } from './verify-key'
 
 export async function RunActionStep(): Promise<boolean> {
