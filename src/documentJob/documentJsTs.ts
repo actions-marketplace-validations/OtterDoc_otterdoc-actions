@@ -3,6 +3,8 @@ import ts from 'typescript'
 import {encode} from 'gpt-3-encoder'
 import axios from 'axios'
 import {config as dotenvConfig} from 'dotenv'
+import {getNodeTypeString, isNodeExported} from './utils/nodeTypeHelper'
+import {replaceOrInsertComment} from './utils/updateTsJsComment'
 dotenvConfig()
 
 const config = JSON.parse(fs.readFileSync('./otterconfig.json', 'utf8'))
@@ -26,14 +28,15 @@ interface DocumentablePart {
   type: string
   code: string
   isPublic: boolean
-  lineNumber?: number
+  lineNumber?: number //used for sorting
   documentation?: string
   leadingComments?: {comment: string; range: ts.TextRange}[]
 }
 
 const generateDocumentation = async (
   part: DocumentablePart
-): Promise<string> => {
+): Promise<string | null> => {
+  console.log('MADE IT HERE')
   if (config.debug) {
     // Return static comment
     return `/**
@@ -44,32 +47,39 @@ const generateDocumentation = async (
 */`
   } else {
     try {
-      const response = await axios.post('http://www.otterdoc.ai/api/getComment', {
-        // Replace YOUR_ENDPOINT with the endpoint of your server function
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
+      const otterdocUrl = process.env.OTTERDOC_URL || 'https://www.otterdoc.ai'
+
+      const previousComment =
+        part.leadingComments && part.leadingComments.length > 0
+          ? part.leadingComments[0].comment
+          : ''
+
+      const response = await axios.post(
+        otterdocUrl + '/api/getComment',
+        {
           apiKey: process.env.OTTERDOC_API_KEY,
           functionString: part.code,
-          previousComment: part.documentation,
+          previousComment: previousComment,
           funcType: part.type
-          // Add other required fields here
-        })
-      })
+        },
+        {
+          headers: {
+            'Content-Type': 'application/json'
+          }
+        }
+      )
 
       if (!response.data) {
         throw new Error(`HTTP error! status: ${response.status}`)
       }
 
       console.log('Got response from API', response.data)
-      const data = (await response.data.json()) as ResponseData
+      const data = response.data as ResponseData
       const documentation = data.comment
       return documentation
     } catch (error) {
       console.error('Error during API request:', error)
-      return 'failed to connect'
+      return null
     }
   }
 }
@@ -78,7 +88,16 @@ const extractDocumentableParts = (
   code: string,
   options: ExtractOptions
 ): DocumentablePart[] => {
+  // Define DocumentablePart array to be returned
   const documentableParts: DocumentablePart[] = []
+
+  // Create source file
+  const sourceFile = ts.createSourceFile(
+    'example.ts',
+    code,
+    ts.ScriptTarget.Latest,
+    /*setParentNodes*/ true
+  )
 
   function isOptionKey(
     key: string,
@@ -89,99 +108,40 @@ const extractDocumentableParts = (
     )
   }
 
-  const sourceFile = ts.createSourceFile(
-    'example.js',
-    code,
-    ts.ScriptTarget.Latest,
-    /*setParentNodes*/ true
-  )
+  // Helper function to check if a comment is a TypeDoc comment
+  function isTypeDocComment(comment: string): boolean {
+    return comment.startsWith('/**') && !comment.startsWith('/***')
+  }
 
-  const visit = (node: ts.Node): void => {
-    let type: string | undefined
-    if (ts.isClassDeclaration(node)) {
-      type = 'ClassDeclaration'
-    } else if (ts.isMethodDeclaration(node)) {
-      type = 'ClassMethod'
-    } else if (ts.isFunctionDeclaration(node)) {
-      type = 'FunctionDeclaration'
-    } else if (ts.isInterfaceDeclaration(node)) {
-      type = 'InterfaceDeclaration'
-    } else if (ts.isTypeAliasDeclaration(node)) {
-      type = 'TypeAlias'
-    } else if (ts.isEnumDeclaration(node)) {
-      type = 'EnumDeclaration'
-    } else if (
-      ts.isPropertyDeclaration(node) &&
-      node.initializer &&
-      ts.isArrowFunction(node.initializer)
-    ) {
-      type = 'ArrowFunctionExpression'
-    }
-
+  function visit(node: ts.Node): void {
+    // Get the node type
+    const type = getNodeTypeString(node)
+    const isPublic = isNodeExported(node)
+    // Check if the node is one we want to document
     if (type && isOptionKey(type, options)) {
+      const leadingComments = ts.getLeadingCommentRanges(
+        code,
+        node.getFullStart()
+      )
+      let comments: {comment: string; range: ts.TextRange}[] = []
+      if (leadingComments) {
+        leadingComments.forEach(commentRange => {
+          const comment = code.slice(commentRange.pos, commentRange.end)
+          if (isTypeDocComment(comment)) {
+            comments.push({comment: comment, range: commentRange})
+          }
+        })
+      }
       const start =
         sourceFile.getLineAndCharacterOfPosition(node.getStart()).line + 1
-      const getJSDocComments = (
-        node: ts.Node
-      ): {comment: string; range: ts.TextRange}[] => {
-        const isJSDocComment = (
-          comment: ts.CommentRange
-        ): boolean => {
-          const commentText = sourceFileText.slice(comment.pos, comment.end)
-          return (
-            commentText.startsWith('/**') && !commentText.startsWith('/***')
-          )
-        }
-        const sourceFileText = node.getSourceFile().getText()
-        const comments: {comment: string; range: ts.CommentRange}[] = []
-        ts.forEachLeadingCommentRange(
-          sourceFileText,
-          node.pos,
-          (pos, end, kind) => {
-            const commentRange: ts.CommentRange = {pos, end, kind}
-            if (isJSDocComment(commentRange)) {
-              comments.push({
-                comment: sourceFileText.slice(pos, end),
-                range: commentRange
-              })
-            }
-          }
-        )
-        return comments
-      }
-
-      const isNodePublic = (node: ts.Node): boolean => {
-        if (ts.isClassElement(node)) {
-          const modifiers = ts.getCombinedModifierFlags(node)
-          return !(
-            modifiers &
-            (ts.ModifierFlags.Private | ts.ModifierFlags.Protected)
-          )
-        } else if (
-          ts.isClassDeclaration(node) ||
-          ts.isFunctionDeclaration(node) ||
-          ts.isInterfaceDeclaration(node) ||
-          ts.isTypeAliasDeclaration(node) ||
-          ts.isEnumDeclaration(node)
-        ) {
-          return (
-            node.modifiers !== undefined &&
-            node.modifiers.some(m => m.kind === ts.SyntaxKind.ExportKeyword)
-          )
-        }
-        return false
-      }
-      let isPublic = isNodePublic(node)
-
       documentableParts.push({
         type,
         code: node.getText(),
         isPublic,
         lineNumber: start,
-        leadingComments: getJSDocComments(node)
+        leadingComments: comments
       })
     }
-
     ts.forEachChild(node, visit)
   }
   visit(sourceFile)
@@ -198,26 +158,6 @@ const options: ExtractOptions = {
   EnumDeclaration: true
 }
 
-const formatDocumentation = (documentation: string, indentation: string): string => {
-  // Split the documentation into lines
-  let documentationLines = documentation.split('\n')
-
-  // Format the documentation lines
-  documentationLines = documentationLines.map((line, index) => {
-    line = line.trim()
-    if (index === 0) {
-      return `${indentation}/**`
-    } else if (index === documentationLines.length - 1) {
-      return `${indentation} */`
-    } else {
-      return `${indentation} ${line}`
-    }
-  })
-
-  // Join the lines back together into a single comment
-  return documentationLines.join('\n')
-}
-
 export const documentJsTs = async (file: string): Promise<void> => {
   console.log(`Documenting file: ${file}`)
   let fileContent = fs.readFileSync(file, 'utf8')
@@ -229,7 +169,7 @@ export const documentJsTs = async (file: string): Promise<void> => {
   )
 
   // Create a copy of the file content split by lines
-  const fileContentLines = fileContent.split('\n')
+  let fileContentLines = fileContent.split('\n')
 
   for (const part of documentableParts) {
     // Check if the part exceeds the token limit
@@ -240,62 +180,22 @@ export const documentJsTs = async (file: string): Promise<void> => {
     }
 
     // Generate the documentation for this part
-    part.documentation = await generateDocumentation(part)
+    // will be nothing if it fails
+    part.documentation = (await generateDocumentation(part)) || ''
     if (part.documentation) {
-      // Get indentation from the line of code
-      const indentation =
-        fileContentLines[part.lineNumber! - 1].match(/^\s*/)?.[0] ?? ''
-      // Format the documentation
-      const comment = formatDocumentation(part.documentation, indentation)
-
-      // Check if existing comment is present
-      if (part.leadingComments && part.leadingComments.length > 0) {
-        // Get the old comment
-        const leadingComment = part.leadingComments[0]
-
-        // Calculate the line numbers of the comment in the source file
-        const startLineNumber = fileContent
-          .substring(0, leadingComment.range.pos)
-          .split('\n').length
-        const endLineNumber = fileContent
-          .substring(0, leadingComment.range.end)
-          .split('\n').length
-
-        // Check if the comment in the source code matches the comment we recorded
-        const commentInFile = fileContentLines
-          .slice(startLineNumber - 1, endLineNumber)
-          .join('\n')
-        // helper arrow function
-        const normalizeWhitespace = (str: string): string =>
-          str.replace(/\s+/g, ' ').trim()
-        if (
-          normalizeWhitespace(commentInFile) ===
-          normalizeWhitespace(leadingComment.comment)
-        ) {
-          // Replace the old comment with the new one
-          fileContentLines.splice(
-            startLineNumber - 1,
-            endLineNumber - startLineNumber + 1,
-            ...comment.split('\n')
-          )
-        } else {
-          console.log(
-            `Existing comment does not match the recorded comment: ${commentInFile}`
-          )
-          console.log(`Recorded comment: ${leadingComment.comment}`)
-        }
-      } else {
-        // Insert the comment at the appropriate line
-        fileContentLines.splice(part.lineNumber! - 1, 0, comment)
-      }
+      fileContentLines = replaceOrInsertComment(
+        fileContentLines,
+        fileContent,
+        part
+      )
     }
   }
 
-// Join the modified file content
-const updatedFileContent = fileContentLines.join('\n')
+  // Join the modified file content
+  const updatedFileContent = fileContentLines.join('\n')
 
-// Write the modified file content to the original file, thus overwriting it
-fs.writeFileSync(file, updatedFileContent)
+  // Write the modified file content to the original file, thus overwriting it
+  fs.writeFileSync(file, updatedFileContent)
 
-console.log(documentableParts)
+  console.log(documentableParts)
 }

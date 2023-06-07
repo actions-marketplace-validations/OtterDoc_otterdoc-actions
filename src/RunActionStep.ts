@@ -1,6 +1,8 @@
 import * as core from '@actions/core'
 import { documentRepo } from './documentJob/repoCrawl'
 import { VerifyOtterDocKey } from './verify-key'
+import {config as dotenvConfig} from 'dotenv'
+dotenvConfig()
 
 export async function RunActionStep(): Promise<boolean> {
   console.log('Here we goooooo')

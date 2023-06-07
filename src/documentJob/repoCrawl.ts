@@ -44,7 +44,7 @@ const traverseDirectory = async (
   try {
     filesAndFolders = await fs.readdir(directoryPath, {withFileTypes: true})
   } catch (error) {
-    console.error(`Failed to read directory: ${directoryPath}`)
+    console.error(`Failed to read this directory: ${directoryPath}`)
     return
   }
 
@@ -59,6 +59,7 @@ const traverseDirectory = async (
 
     if (entry.isFile()) {
       try {
+        console.log(`Processing file: ${entryPath}`)
         await processFile(entryPath)
       } catch (error) {
         console.error(`Failed to process file: ${entryPath}`)

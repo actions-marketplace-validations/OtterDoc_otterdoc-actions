@@ -1,3 +1,4 @@
+/* deprecated */
 import fs from 'fs/promises'
 import path from 'path'
 import ignore, {Ignore} from 'ignore'
@@ -36,7 +37,7 @@ const traverseDirectory = async (
   try {
     filesAndFolders = await fs.readdir(directoryPath, {withFileTypes: true})
   } catch (error) {
-    console.error(`Failed to read directory: ${directoryPath}`)
+    console.error(`Failed to read this directory: ${directoryPath}`)
     return
   }
 
@@ -79,7 +80,7 @@ export const documentRepo = async (basePath: string) => {
   }
 
   if (combinedIgnore) {
-    console.log('Skipping files based on ignore config')
+    console.log('OLD: Skipping files based on ignore config')
   }
 
   await traverseDirectory(basePath, basePath, combinedIgnore)
