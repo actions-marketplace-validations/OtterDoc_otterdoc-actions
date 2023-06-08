@@ -11,11 +11,11 @@ interface Config {
   debug?: boolean
 }
 let config: Config = {}
-try {
-  config = JSON.parse(fs.readFileSync('./otterconfig.json', 'utf8'))
-} catch (error) {
-  console.log('No config file found, using defaults')
-}
+// try {
+//   config = JSON.parse(fs.readFileSync('./otterconfig.json', 'utf8'))
+// } catch (error) {
+//   console.log('No config file found, using defaults')
+// }
 
 interface ResponseData {
   comment: string
