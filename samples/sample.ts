@@ -1,13 +1,7 @@
-/**
- * Interface for a User object.
- * @param {string} name - The name of the user.
- * @param {number} id - The unique identifier of the user.
- */
 export interface User {
   name: string
   id: number
 }
-
 /**
  * Represents a user account with a name and ID.
  * @class
@@ -24,10 +18,6 @@ export class UserAccount {
   }
 }
 
-/**
- * Returns a new instance of UserAccount with the name 'Murphy' and id 1.
- * @returns {User} A User object representing the admin user.
- */
 export function getAdminUser(): User {
   return new UserAccount('Murphy', 1)
 }
