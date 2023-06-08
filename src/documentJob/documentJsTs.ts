@@ -6,7 +6,6 @@ import ts from 'typescript'
 import {getNodeTypeString, isNodeExported} from './utils/nodeTypeHelper'
 import {replaceOrInsertComment} from './utils/updateTsJsComment'
 import otterConfig from '../otterConfigLoad'
-
 dotenvConfig()
 
 interface ResponseData {

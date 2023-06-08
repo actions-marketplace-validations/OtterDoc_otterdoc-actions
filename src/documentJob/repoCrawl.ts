@@ -59,7 +59,6 @@ const traverseDirectory = async (
 
     if (entry.isFile()) {
       try {
-        console.log(`Processing file: ${entryPath}`)
         await processFile(entryPath)
       } catch (error) {
         console.error(`Failed to process file: ${entryPath}`)
@@ -79,6 +78,7 @@ export const documentRepo = async (directoryPath: string): Promise<void> => {
 
   // Create a combined ignore object
   const combinedIgnore = ignore()
+  combinedIgnore.add('**/.*') // Ignore all hidden files and directories
   if (gitignore) {
     combinedIgnore.add(gitignore)
   }
