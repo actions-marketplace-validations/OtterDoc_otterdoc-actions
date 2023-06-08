@@ -1,21 +1,21 @@
 import axios from 'axios'
-import { config as dotenvConfig } from 'dotenv'
+import {config as dotenvConfig} from 'dotenv'
 import fs from 'fs'
-import { encode } from 'gpt-3-encoder'
+import {encode} from 'gpt-3-encoder'
 import ts from 'typescript'
-import { getNodeTypeString, isNodeExported } from './utils/nodeTypeHelper'
-import { replaceOrInsertComment } from './utils/updateTsJsComment'
+import {getNodeTypeString, isNodeExported} from './utils/nodeTypeHelper'
+import {replaceOrInsertComment} from './utils/updateTsJsComment'
 dotenvConfig()
 
 interface Config {
   debug?: boolean
 }
 let config: Config = {}
-// try {
-//   config = JSON.parse(fs.readFileSync('./otterconfig.json', 'utf8'))
-// } catch (error) {
-//   console.log('No config file found, using defaults')
-// }
+try {
+  config = JSON.parse(fs.readFileSync('./otterconfig.json', 'utf8'))
+} catch (error) {
+  console.log('No config file found, using defaults')
+}
 
 interface ResponseData {
   comment: string
