@@ -65,7 +65,7 @@ const generateDocumentation = async (
       const response = await axios.post(
         otterdocUrl + '/api/getComment',
         {
-          apiKey: process.env.OTTERDOC_API_KEY,
+          apiKey: process.env.INPUT_KEY,
           functionString: part.code,
           previousComment: previousComment,
           funcType: part.type

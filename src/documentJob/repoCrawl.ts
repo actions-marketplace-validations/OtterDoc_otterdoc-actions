@@ -44,7 +44,7 @@ const traverseDirectory = async (
   try {
     filesAndFolders = await fs.readdir(directoryPath, {withFileTypes: true})
   } catch (error) {
-    console.error(`Failed to read this directory: ${directoryPath}`)
+    console.error(`Failed to read this directory 2: ${directoryPath}`)
     return
   }
 

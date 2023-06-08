@@ -1,9 +1,7 @@
 /**
- * Returns a string representing the name of a user given their ID.
- *
+ * Interface for a User object.
+ * @param {string} name - The name of the user.
  * @param {number} id - The unique identifier of the user.
- * @param {User[]} users - An array of User objects containing the user data.
- * @returns {string} - The name of the user matched with the given ID, or null if none is found.
  */
 export interface User {
   name: string
@@ -11,11 +9,10 @@ export interface User {
 }
 
 /**
- * A class representing a User Account.
+ * Represents a user account with a name and ID.
  * @class
- * @property {string} name - The name of the user.
- * @property {number} id - The unique ID of the user.
- * @classdesc Used to create and manage user accounts.
+ * @param {string} name - The name of the user.
+ * @param {number} id - The ID of the user.
  */
 export class UserAccount {
   name: string
@@ -28,9 +25,8 @@ export class UserAccount {
 }
 
 /**
- Returns a User object representing the admin user.
- 
- @returns {User} - Object of type User, which includes properties such as username and id.
+ * Returns a new instance of UserAccount with the name 'Murphy' and id 1.
+ * @returns {User} A User object representing the admin user.
  */
 export function getAdminUser(): User {
   return new UserAccount('Murphy', 1)
