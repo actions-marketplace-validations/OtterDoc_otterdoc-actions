@@ -5,17 +5,9 @@ import {encode} from 'gpt-3-encoder'
 import ts from 'typescript'
 import {getNodeTypeString, isNodeExported} from './utils/nodeTypeHelper'
 import {replaceOrInsertComment} from './utils/updateTsJsComment'
-dotenvConfig()
+import otterConfig from '../otterConfigLoad'
 
-interface Config {
-  debug?: boolean
-}
-let config: Config = {}
-try {
-  config = JSON.parse(fs.readFileSync('./otterconfig.json', 'utf8'))
-} catch (error) {
-  console.log('No config file found, using defaults')
-}
+dotenvConfig()
 
 interface ResponseData {
   comment: string
@@ -45,7 +37,7 @@ const generateDocumentation = async (
   part: DocumentablePart
 ): Promise<string | null> => {
   console.log('MADE IT HERE')
-  if (config.debug) {
+  if (otterConfig.debug) {
     // Return static comment
     return `/**
 * Represents a network with Ethereum Virtual Machine (EVM) capabilities.
@@ -61,7 +53,6 @@ const generateDocumentation = async (
         part.leadingComments && part.leadingComments.length > 0
           ? part.leadingComments[0].comment
           : ''
-
       const response = await axios.post(
         otterdocUrl + '/api/getComment',
         {
