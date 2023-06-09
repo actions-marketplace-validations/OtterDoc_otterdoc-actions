@@ -126,7 +126,23 @@ const extractDocumentableParts = (
         leadingComments.forEach(commentRange => {
           const comment = code.slice(commentRange.pos, commentRange.end)
           if (isTypeDocComment(comment)) {
-            comments.push({comment: comment, range: commentRange})
+            // Check if the comment is directly above the current node
+            // This is done by checking if there is an empty line
+            const commentEndLineNumber = sourceFile.getLineAndCharacterOfPosition(commentRange.end).line + 1
+            const nodeStartLineNumber = sourceFile.getLineAndCharacterOfPosition(node.getStart()).line + 1
+            const diff = nodeStartLineNumber - commentEndLineNumber
+            // Check if the lines between the comment and the node are empty
+            let hasEmptyLine = false
+            for (let i = 1; i < diff; i++) {
+              const line = sourceFile.text.split('\n')[commentEndLineNumber + i - 1].trim()
+              if (line === '') {
+                hasEmptyLine = true
+                break
+              }
+            }
+            if (!hasEmptyLine) {
+              comments.push({ comment: comment, range: commentRange })
+            }
           }
         })
       }
