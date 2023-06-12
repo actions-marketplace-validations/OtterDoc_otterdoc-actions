@@ -2,6 +2,7 @@
   "name": "otterdoc-action",
   "version": "1.0.1",
   "private": true,
+  "homepage": "https://www.otterdoc.ai",
   "description": "TypeScript template action",
   "main": "lib/main.js",
   "scripts": {
