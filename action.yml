@@ -1,6 +1,6 @@
-name: 'Your name here'
-description: 'Provide a description here'
-author: 'Your name or organization here'
+name: 'OtterDoc'
+description: 'Let AI write your documentation for you'
+author: 'OtterDoc'
 inputs:
   key:
     required: true
@@ -8,3 +8,7 @@ inputs:
 runs:
   using: 'node16'
   main: 'dist/index.js'
+
+branding:
+  icon: 'terminal'
+  color: 'purple'
