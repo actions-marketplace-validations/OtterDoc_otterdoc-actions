@@ -3,16 +3,40 @@ import {config as dotenvConfig} from 'dotenv'
 import fs from 'fs'
 import {encode} from 'gpt-3-encoder'
 import ts from 'typescript'
-import {getNodeTypeString, isNodeExported} from './utils/nodeTypeHelper'
+import {getPercentComplete, inclementCount} from './utils/Progress'
+import {
+  getNodeDisplayName,
+  getNodeTypeString,
+  isNodeExported
+} from './utils/nodeTypeHelper'
+import {isMinified} from './utils/isMinifiedFile'
 import {replaceOrInsertComment} from './utils/updateTsJsComment'
-import otterConfig from '../otterConfigLoad'
+import {loadYmlKeys} from './utils/loadYmlKeys'
+import {loadLanguageModels} from './utils/loadLanguageModels'
 dotenvConfig()
 
+const ymlKeys = loadYmlKeys()
+const modelsMaxTokens = loadLanguageModels()
+
+/**
+ * Interface for response data.
+ * @param {string} comment - The comment for the response.
+ */
 interface ResponseData {
   comment: string
   // Define other properties here if necessary
 }
 
+/**
+ * Options for extracting specific types of declarations from a codebase.
+ * @property {boolean} ArrowFunctionExpression - Whether or not to extract Arrow Function Expressions.
+ * @property {boolean} ClassDeclaration - Whether or not to extract Class Declarations.
+ * @property {boolean} ClassMethod - Whether or not to extract Class Methods.
+ * @property {boolean} FunctionDeclaration - Whether or not to extract Function Declarations.
+ * @property {boolean} InterfaceDeclaration - Whether or not to extract Interface Declarations.
+ * @property {boolean} TypeAlias - Whether or not to extract Type Aliases.
+ * @property {boolean} EnumDeclaration - Whether or not to extract Enum Declarations.
+ */
 interface ExtractOptions {
   ArrowFunctionExpression?: boolean
   ClassDeclaration?: boolean
@@ -23,10 +47,21 @@ interface ExtractOptions {
   EnumDeclaration?: boolean
 }
 
+/**
+ * Interface for a documentable part.
+ * @property {string} type - The type of the documentable part.
+ * @property {string} code - The code of the documentable part.
+ * @property {boolean} isPublic - Indicates whether the documentable part is public or not.
+ * @property {string} nodeDisplayName - The display name of the node.
+ * @property {number} [lineNumber] - The line number of the documentable part (used for sorting).
+ * @property {string} [documentation] - The documentation of the documentable part.
+ * @property {Object[]} [leadingComments] - The leading comments of the documentable part, with each comment containing a string and a range.
+ */
 interface DocumentablePart {
   type: string
   code: string
   isPublic: boolean
+  nodeDisplayName: string
   lineNumber?: number //used for sorting
   documentation?: string
   leadingComments?: {comment: string; range: ts.TextRange}[]
@@ -35,50 +70,47 @@ interface DocumentablePart {
 const generateDocumentation = async (
   part: DocumentablePart
 ): Promise<string | null> => {
-  console.log('MADE IT HERE')
-  if (otterConfig.debug) {
-    // Return static comment
-    return `/**
-* Represents a network with Ethereum Virtual Machine (EVM) capabilities.
-*
-* @class
-* @extends Network
-*/`
-  } else {
-    try {
-      const otterdocUrl = process.env.OTTERDOC_URL || 'https://www.otterdoc.ai'
+  try {
+    const otterdocUrl = process.env.OTTERDOC_URL || 'https://www.otterdoc.ai'
 
-      const previousComment =
-        part.leadingComments && part.leadingComments.length > 0
-          ? part.leadingComments[0].comment
-          : ''
-      const response = await axios.post(
-        otterdocUrl + '/api/getComment',
-        {
-          apiKey: process.env.INPUT_KEY,
-          functionString: part.code,
-          previousComment: previousComment,
-          funcType: part.type
-        },
-        {
-          headers: {
-            'Content-Type': 'application/json'
-          }
-        }
-      )
+    const numberOfLines = part.code.split('\n').length
 
-      if (!response.data) {
-        throw new Error(`HTTP error! status: ${response.status}`)
-      }
-
-      console.log('Got response from API', response.data)
-      const data = response.data as ResponseData
-      const documentation = data.comment
-      return documentation
-    } catch (error) {
-      console.error('Error during API request:', error)
+    if (numberOfLines < 10) {
       return null
     }
+
+    const previousComment =
+      part.leadingComments && part.leadingComments.length > 0
+        ? part.leadingComments[0].comment
+        : ''
+    const response = await axios.post(
+      otterdocUrl + '/api/getComment',
+      {
+        apiKey: process.env.OTTERDOC_KEY || process.env.INPUT_KEY,
+        functionString: part.code,
+        previousComment: previousComment,
+        funcType: part.type,
+        model: ymlKeys.model,
+      },
+      {
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      }
+    )
+
+    if (!response.data) {
+      console.error('Request error! status: ${response.status}')
+      throw new Error(`Request error! status: ${response.status}`)
+    }
+
+    const data = response.data as ResponseData
+    const documentation = data.comment
+
+    return documentation
+  } catch (error) {
+    console.error('Failed to generate comment for code:', error)
+    return null
   }
 }
 
@@ -97,6 +129,12 @@ const extractDocumentableParts = (
     /*setParentNodes*/ true
   )
 
+  /**
+   * Checks if a given string is a key of the ExtractOptions object.
+   * @param {string} key - The key to check.
+   * @param {ExtractOptions} options - The options object to check against.
+   * @returns {boolean} - True if the key is a valid option key, false otherwise.
+   */
   function isOptionKey(
     key: string,
     options: ExtractOptions
@@ -107,14 +145,38 @@ const extractDocumentableParts = (
   }
 
   // Helper function to check if a comment is a TypeDoc comment
+  /**
+   * Determines if a given string is a valid TypeDoc comment.
+   * @param comment - The comment string to check.
+   * @returns {boolean} - True if the comment is a valid TypeDoc comment, false otherwise.
+   */
   function isTypeDocComment(comment: string): boolean {
     return comment.startsWith('/**') && !comment.startsWith('/***')
   }
 
+  /**
+   * Visits a TypeScript node and adds it to the list of documentable parts if it meets certain criteria.
+   * @param node The TypeScript node to visit.
+   * @returns void
+   */
   function visit(node: ts.Node): void {
+    // check if the function is a short function
+    if (ymlKeys.functionLineThreshold) {
+      const functionLines = code
+        .substring(node.getStart(), node.getEnd())
+        .split('\n')
+        .filter(line => line.trim().length > 0)
+      const isShortFunction = functionLines.length <= ymlKeys.functionLineThreshold
+
+      if (isShortFunction) {
+        // Skip short functions without adding them to the documentable parts
+        return
+      }
+    }
     // Get the node type
     const type = getNodeTypeString(node)
-    const isPublic = isNodeExported(node)
+    const isExported = isNodeExported(node)
+    const nodeDisplayName = getNodeDisplayName(node)
     // Check if the node is one we want to document
     if (type && isOptionKey(type, options)) {
       const leadingComments = ts.getLeadingCommentRanges(
@@ -128,30 +190,42 @@ const extractDocumentableParts = (
           if (isTypeDocComment(comment)) {
             // Check if the comment is directly above the current node
             // This is done by checking if there is an empty line
-            const commentEndLineNumber = sourceFile.getLineAndCharacterOfPosition(commentRange.end).line + 1
-            const nodeStartLineNumber = sourceFile.getLineAndCharacterOfPosition(node.getStart()).line + 1
+            const commentEndLineNumber =
+              sourceFile.getLineAndCharacterOfPosition(commentRange.end).line +
+              1
+            const nodeStartLineNumber =
+              sourceFile.getLineAndCharacterOfPosition(node.getStart()).line + 1
             const diff = nodeStartLineNumber - commentEndLineNumber
             // Check if the lines between the comment and the node are empty
             let hasEmptyLine = false
             for (let i = 1; i < diff; i++) {
-              const line = sourceFile.text.split('\n')[commentEndLineNumber + i - 1].trim()
+              const line = sourceFile.text
+                .split('\n')
+                [commentEndLineNumber + i - 1].trim()
               if (line === '') {
                 hasEmptyLine = true
                 break
               }
             }
             if (!hasEmptyLine) {
-              comments.push({ comment: comment, range: commentRange })
+              comments.push({comment: comment, range: commentRange})
             }
           }
         })
       }
+
+      // If 'ignoreAlreadyCommented' is true and the function has comments, skip this function
+      if (ymlKeys.ignoreAlreadyCommented && comments.length > 0) {
+        return
+      }
+
       const start =
         sourceFile.getLineAndCharacterOfPosition(node.getStart()).line + 1
       documentableParts.push({
         type,
         code: node.getText(),
-        isPublic,
+        isPublic: isExported,
+        nodeDisplayName,
         lineNumber: start,
         leadingComments: comments
       })
@@ -172,10 +246,20 @@ const options: ExtractOptions = {
   EnumDeclaration: true
 }
 
-export const documentJsTs = async (file: string): Promise<void> => {
+export const DocumentTypeScriptFile = async (file: string): Promise<void> => {
   console.log(`Documenting file: ${file}`)
+  // first check if the file is minified
+  if (isMinified(file)) {
+    console.log(`Skpping, file is minified: ${file}`)
+    return
+  }
   let fileContent = fs.readFileSync(file, 'utf8')
   let documentableParts = extractDocumentableParts(fileContent, options)
+
+  if (documentableParts.length === 0) {
+    console.log(`${getPercentComplete()}- Nothing to document in ${file}`)
+    return
+  }
 
   // Sort documentableParts in descending order by lineNumber
   documentableParts = documentableParts.sort(
@@ -185,11 +269,19 @@ export const documentJsTs = async (file: string): Promise<void> => {
   // Create a copy of the file content split by lines
   let fileContentLines = fileContent.split('\n')
 
-  for (const part of documentableParts) {
+  let i = 1
+  for await (const part of documentableParts) {
     // Check if the part exceeds the token limit
     const tokens = encode(part.code)
-    if (tokens.length > 4096) {
-      console.log(`Part exceeds the token limit: ${part.code}`)
+    const modelMaxTokens = modelsMaxTokens[ymlKeys.model]
+    
+    if (!modelMaxTokens) {
+      console.log(`Invalid model: ${ymlKeys.model}`)
+      return
+    }
+    
+    if (tokens.length > modelMaxTokens) {
+      console.log('Part exceeds the token limit. Cannot document at this time.')
       continue
     }
 
@@ -203,6 +295,14 @@ export const documentJsTs = async (file: string): Promise<void> => {
         part
       )
     }
+
+    console.log(
+      `${getPercentComplete()}- Finished part [${i++}/${
+        documentableParts.length
+      }] of ${file}:`,
+      part.nodeDisplayName.substring(0, 50),
+      part.nodeDisplayName.length > 50 ? '...' : ''
+    )
   }
 
   // Join the modified file content
@@ -210,6 +310,7 @@ export const documentJsTs = async (file: string): Promise<void> => {
 
   // Write the modified file content to the original file, thus overwriting it
   fs.writeFileSync(file, updatedFileContent)
+  inclementCount()
 
-  console.log(documentableParts)
+  console.log(`${getPercentComplete()}- Done with ${file}`)
 }

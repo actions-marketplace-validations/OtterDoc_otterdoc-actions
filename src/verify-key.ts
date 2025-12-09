@@ -1,17 +1,48 @@
 import * as core from '@actions/core'
 import axios from 'axios'
 
+/**
+ * Verifies if the provided OtterDoc key is valid by making a GET request to the OtterDoc API.
+ * @async
+ * @function VerifyOtterDocKey
+ * @param {string} key - The OtterDoc key to be verified.
+ * @returns {Promise<boolean>} - A Promise that resolves to a boolean indicating if the key is valid or not.
+ */
 export async function VerifyOtterDocKey(key: string): Promise<boolean> {
   const otterdocUrl = process.env.OTTERDOC_URL || 'https://www.otterdoc.ai'
-  const result = await axios.get(
-    otterdocUrl + `/api/verify-key?key=${key}`
-  )
 
-  if (result.status === 200) {
-    core.warning('Key is valid')
+  if (!key) {
+    core.warning(
+      'Missing OTTERDOC_KEY environment variable. Please add it to your repo secrets.'
+    )
+    core.warning('How to add:')
+    core.warning('    - Go to your repo page')
+    core.warning('    - Click "settings"')
+    core.warning('    - Expand "secrets and variables" on the left hand side')
+    core.warning('    - Select "Actions" submenu')
+    core.warning('    - Select "Actions" submenu')
+    core.warning('    - Click the "New repository secret" button')
+    core.warning(
+      '    - Can be found at this url: https://github.com/<ORG>/<REPO>/settings/secrets/actions/new'
+    )
+    core.warning('    - Key name: "OTTERDOC_KEY"')
+    core.warning(
+      '    - Get your OtterDoc key at https://www.otterdoc.ai under your account'
+    )
+    return false
+  }
+
+  const result = await axios
+    .get(otterdocUrl + `/api/verify-key?key=${key}`)
+    .catch(error => {
+      console.log(
+        'Error verifying OTTERDOC_KEY key. Please make sure it is correct.'
+      )
+    })
+
+  if (result?.status === 200) {
+    console.log('Key is valid')
     return true
   }
-  core.warning('Key is invalid')
-  core.warning(`Verify status code: ${result.status}`)
   return false
 }

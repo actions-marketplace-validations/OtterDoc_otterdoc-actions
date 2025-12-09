@@ -1,19 +1,25 @@
-import fs from 'fs/promises'
+import * as core from '@actions/core'
+import Bottleneck from 'bottleneck'
+import fs from 'fs'
+import { promises as fSAsync } from 'fs'
 import path from 'path'
 import ignore, {Ignore} from 'ignore'
-import {documentJsTs} from './documentJsTs'
+import {DocumentTypeScriptFile} from './documentJsTs'
+import {setTotal} from './utils/Progress'
 
-export const processFile = async (file: string): Promise<void> => {
+
+let totalFiles = 0
+let totalFilesProcessed = 0
+
+export const shouldProcessFile = (file: string): boolean => {
   const ext = path.extname(file)
   switch (ext) {
     case '.js':
-      await documentJsTs(file)
-      break
     case '.ts':
-      await documentJsTs(file)
-      break
+      return true
     // Add more cases if needed
   }
+  return false
 }
 
 const readIgnoreFile = async (
@@ -22,7 +28,7 @@ const readIgnoreFile = async (
 ): Promise<Ignore | null> => {
   const filePath = path.join(basePath, filename)
   try {
-    const fileContent = await fs.readFile(filePath, 'utf-8')
+    const fileContent = await fSAsync.readFile(filePath, 'utf-8')
     return ignore().add(fileContent)
   } catch (error) {
     return null
@@ -33,63 +39,119 @@ const traverseDirectory = async (
   directoryPath: string,
   basePath: string,
   ig: Ignore | null,
-  maxDepth = 3
-): Promise<void> => {
+  maxDepth = 20
+): Promise<string[]> => {
+  console.log(`Traversing directory: ${directoryPath} with base: ${basePath}`)
   if (maxDepth < 0) {
     console.log(`Max depth reached for directory: ${directoryPath}`)
-    return
+    return []
   }
 
   let filesAndFolders
   try {
-    filesAndFolders = await fs.readdir(directoryPath, {withFileTypes: true})
+    filesAndFolders = await fs.promises.opendir(directoryPath)
   } catch (error) {
     console.error(`Failed to read this directory 2: ${directoryPath}`)
-    return
+    return []
   }
 
-  const tasks = filesAndFolders.map(async entry => {
+  const filePaths = []
+
+  for await (const entry of filesAndFolders) {
     const entryPath = path.join(directoryPath, entry.name)
     const relativePath = path.relative(basePath, entryPath)
 
     if (ig && ig.ignores(relativePath)) {
-      // console.log(`Skipping ignored path: ${entryPath}`);
-      return
+      continue
     }
 
     if (entry.isFile()) {
       try {
-        await processFile(entryPath)
+        const shouldProcess = shouldProcessFile(entryPath)
+        if (shouldProcess) {
+          console.log(`Found file to add: ${entryPath}`)
+          filePaths.push(entryPath)
+        }
       } catch (error) {
         console.error(`Failed to process file: ${entryPath}`)
       }
     } else if (entry.isDirectory()) {
-      await traverseDirectory(entryPath, basePath, ig, maxDepth - 1) // Decrease maxDepth by 1
+      const subfolderFiles = await traverseDirectory(
+        entryPath,
+        basePath,
+        ig,
+        maxDepth - 1
+      )
+      filePaths.push(...subfolderFiles)
     }
-  })
+  }
 
-  await Promise.all(tasks)
+  return filePaths
 }
 
-export const documentRepo = async (directoryPath: string): Promise<void> => {
+export const addIncludedFiles = (includeFiles: string, basePath: string, filesToDocument: string[]): string[] => {
+  if (includeFiles) {
+    const includedFilesList = includeFiles.split(',').map(file => file.trim()) // Assuming the files are comma-separated
+    
+    for (const filePath of includedFilesList) {
+      const fullPath = path.join(basePath, filePath)
+      if (fs.existsSync(fullPath)) {
+        const stat = fs.lstatSync(fullPath)
+        if (stat.isDirectory()) {
+          const directoryFiles = fs.readdirSync(fullPath).map((file: string) => path.join(fullPath, file))
+          filesToDocument.push(...directoryFiles)
+        } else if (stat.isFile()) {
+          filesToDocument.push(fullPath)
+        }
+      }
+    }
+    
+    // Removing duplicates
+    filesToDocument = [...new Set(filesToDocument)]
+  }
+  return filesToDocument
+}
+
+export const DocumentRepo = async (directoryPath: string): Promise<void> => {
+  console.log(`Documenting repo at: ${directoryPath}`)
   const basePath = path.join(directoryPath)
   const gitignore = await readIgnoreFile(basePath, '.gitignore')
+  console.log(`gitignore: ${gitignore}`)
   const dockerignore = await readIgnoreFile(basePath, '.dockerignore')
+  const otterdocIgnore = await readIgnoreFile(basePath, '.otterdocignore')
 
   // Create a combined ignore object
   const combinedIgnore = ignore()
   combinedIgnore.add('**/.*') // Ignore all hidden files and directories
-  combinedIgnore.add('*.compressed.js')
+  combinedIgnore.add(['*.compressed.js', '*.min.js'])
   if (gitignore) {
     combinedIgnore.add(gitignore)
   }
   if (dockerignore) {
     combinedIgnore.add(dockerignore)
   }
-
-  if (combinedIgnore) {
-    console.log('Skipping files based on ignore config')
+  if (otterdocIgnore) {
+    combinedIgnore.add(otterdocIgnore)
   }
 
-  await traverseDirectory(basePath, basePath, combinedIgnore)
+  let filesToDocument = await traverseDirectory(
+    directoryPath,
+    basePath,
+    combinedIgnore
+  )
+
+  // Add files based on includeFiles input
+  const includeFiles: string = core.getInput('includeFiles')
+  filesToDocument = addIncludedFiles(includeFiles, basePath, filesToDocument)
+
+  setTotal(filesToDocument.length)
+  console.log(`Found ${filesToDocument.length} files to document`)
+
+  const limiter = new Bottleneck({
+    maxConcurrent: 25
+  })
+
+  for (const file of filesToDocument) {
+    limiter.schedule(async () => DocumentTypeScriptFile(file))
+  }  
 }
